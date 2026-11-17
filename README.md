@@ -9,11 +9,9 @@ scripts or modifies web pages.
 
 ## Install (Load unpacked)
 
-1. Build the extension (`dist/` is not committed):
-   ```bash
-   pnpm install
-   pnpm build
-   ```
+1. Get the prebuilt `dist/` directory: clone this repository or download it
+   as a ZIP. No Node.js or build step is needed. (To build it yourself, run
+   `pnpm install && pnpm build`.)
 2. Open `chrome://extensions`.
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and select the `dist/` directory.
@@ -32,7 +30,9 @@ scripts or modifies web pages.
   all settings: the automatic-muting switch, open tabs (with mute and "Add
   domain" buttons), the rule list and form, and a URL tester.
 
-Requires Chrome 120 or newer.
+Requires Chrome 120 or newer. Other Chromium-based browsers (Edge, Brave,
+Opera, Vivaldi) can load `dist/` the same way; Firefox and Safari are not
+supported.
 
 ## Development
 
@@ -44,7 +44,9 @@ Requires Chrome 120 or newer.
 | `pnpm typecheck` | `tsc --noEmit`                                                                |
 | `pnpm icons`     | Regenerates `public/icons/*.png` (app + muted/unmuted toolbar icons)          |
 
-(`npm run <script>` works the same.) While `pnpm dev` is running, click the
+(`npm run <script>` works the same.) `dist/` is committed so users can load
+the extension without building: run `pnpm build` and commit `dist/` together
+with every source change. While `pnpm dev` is running, click the
 reload button on the extension card in `chrome://extensions` after each
 rebuild; MV3 extension pages and service workers do not hot-reload.
 

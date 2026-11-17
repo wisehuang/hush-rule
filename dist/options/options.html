@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hush Rules – Options</title>
+    <script type="module" crossorigin src="../assets/options-CCPUvR76.js"></script>
+    <link rel="stylesheet" crossorigin href="../assets/options-CwD4YMte.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Hush Rules</h1>
+        <label class="switch">
+          <input type="checkbox" id="auto-toggle" />
+          <span>Automatic muting</span>
+        </label>
+      </header>
+      <p class="hint">
+        A tab is muted when its URL matches <strong>any</strong> enabled rule. Only http:// and https:// pages are
+        checked. Muting happens as soon as the tab's URL is known, so a very short burst of audio at the start of a
+        page load is possible.
+      </p>
+
+      <p class="hint">
+        Click the Hush Rules toolbar button to mute or unmute the current tab. A manual choice is kept until the page
+        reloads or navigates to a new page.
+      </p>
+
+      <section class="card">
+        <h2>Open tabs</h2>
+        <p class="hint">Mute a tab manually or add its domain as a rule.</p>
+        <ul id="tab-list" class="list"></ul>
+        <p id="tabs-empty" class="empty" hidden>No open http:// or https:// tabs.</p>
+      </section>
+
+      <section class="card">
+        <h2 id="form-title">Add a rule</h2>
+        <form id="rule-form" novalidate>
+          <div class="row">
+            <label for="rule-type">Type</label>
+            <select id="rule-type">
+              <option value="domain">Domain</option>
+              <option value="url-prefix">URL prefix</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="rule-value">Value</label>
+            <input type="text" id="rule-value" autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="row" id="subdomains-row">
+            <span></span>
+            <label class="switch">
+              <input type="checkbox" id="rule-subdomains" />
+              <span>Include subdomains</span>
+            </label>
+          </div>
+          <div id="help-domain" class="help hint">
+            Enter a hostname such as <code>example.com</code>, or paste a full http(s) URL and its hostname will be
+            used. <code>example.com</code> matches only <code>example.com</code> unless “Include subdomains” is on
+            (then it also matches <code>www.example.com</code>, <code>a.example.com</code>, …). It never matches
+            <code>notexample.com</code> or <code>example.com.evil.test</code>.
+          </div>
+          <div id="help-prefix" class="help hint" hidden>
+            Enter a complete URL starting with http:// or https://. The scheme, host and port must match exactly;
+            then the path must start with the given path (case-sensitive). <strong>Query strings (?…) and fragments
+            (#…) are ignored.</strong> <code>https://example.com/news</code> matches <code>/news</code>,
+            <code>/news/123</code> and also <code>/newsletter</code>; enter <code>https://example.com/news/</code> to
+            match only pages inside the <code>/news/</code> directory.
+          </div>
+          <p id="preview" class="hint mono" aria-live="polite"></p>
+          <p id="form-error" class="error" role="alert"></p>
+          <div class="buttons">
+            <button type="submit" class="primary" id="save-button">Add rule</button>
+            <button type="button" id="cancel-edit" hidden>Cancel editing</button>
+          </div>
+          <p id="form-feedback" class="hint" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Rules</h2>
+        <ul id="rule-list" class="list"></ul>
+        <p id="rules-empty" class="empty" hidden>No rules yet. Add a domain or URL prefix above.</p>
+      </section>
+
+      <section class="card">
+        <h2>Test a URL</h2>
+        <input type="url" id="tester-input" placeholder="https://www.example.com/news/today" spellcheck="false" />
+        <div id="tester-result" aria-live="polite"></div>
+      </section>
+    </main>
+  </body>
+</html>

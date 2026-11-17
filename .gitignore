@@ -80,7 +80,8 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# dist is committed so the extension can be loaded without building
+# dist
 .output
 
 # NitroJS
