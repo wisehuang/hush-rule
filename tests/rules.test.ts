@@ -12,6 +12,7 @@ import {
   rulesEquivalent,
   sanitizeRules,
   shouldAutoMute,
+  suggestedDomainForHost,
 } from "../src/core/rules";
 import type { Rule } from "../src/core/types";
 
@@ -253,5 +254,19 @@ describe("sanitizeRules", () => {
       { id: "b", type: "url-prefix", value: "https://x.test/a", enabled: true, includeSubdomains: false },
     ]);
     expect(sanitizeRules(undefined)).toEqual([]);
+  });
+});
+
+describe("suggestedDomainForHost", () => {
+  it("drops a leading www. so the rule covers the bare domain", () => {
+    expect(suggestedDomainForHost("www.youtube.com")).toBe("youtube.com");
+  });
+  it("keeps other hosts unchanged", () => {
+    expect(suggestedDomainForHost("news.example.org")).toBe("news.example.org");
+    expect(suggestedDomainForHost("youtube.com")).toBe("youtube.com");
+    expect(suggestedDomainForHost("wwwx.example.com")).toBe("wwwx.example.com");
+  });
+  it("does not reduce a host to a single label", () => {
+    expect(suggestedDomainForHost("www.com")).toBe("www.com");
   });
 });

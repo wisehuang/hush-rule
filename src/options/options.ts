@@ -1,5 +1,5 @@
 import { describeMuteState } from "../core/mute-label";
-import { type RuleDraft, buildRuleDraft, findDuplicateRule, findMatchingRules, getHostname, isSupportedUrl, ruleMatchesUrl } from "../core/rules";
+import { type RuleDraft, buildRuleDraft, findDuplicateRule, findMatchingRules, getHostname, isSupportedUrl, ruleMatchesUrl, suggestedDomainForHost } from "../core/rules";
 import type { Rule, RuleType } from "../core/types";
 import { byId, describeRule, el } from "../shared/dom";
 import type { SetManualMuteMessage, SetManualMuteResponse } from "../shared/messages";
@@ -187,7 +187,7 @@ async function renderTabs(): Promise<void> {
     const muteButton = el("button", { text: mutedInfo.muted ? "Unmute" : "Mute", attrs: { type: "button" } });
     muteButton.addEventListener("click", () => void setTabMuted(tab.id, !mutedInfo.muted));
 
-    const draft = buildRuleDraft("domain", hostname, false);
+    const draft = buildRuleDraft("domain", suggestedDomainForHost(hostname), true);
     const exists = draft.ok && findDuplicateRule(rules, draft.draft) !== undefined;
     const addButton = el("button", { text: exists ? "Domain added" : "Add domain", attrs: { type: "button" } });
     addButton.disabled = !draft.ok || exists;

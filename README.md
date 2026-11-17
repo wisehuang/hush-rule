@@ -100,10 +100,11 @@ Load `dist/` as described above. Open the service worker console from
 Use any site that plays audio (or check the speaker icon / tab context menu,
 which shows "Unmute site"/"Unmute tab").
 
-1. **Domain rule** – Options → add `example.com` (domain). Open
-   `https://example.com` → the tab is muted (tab strip shows a muted speaker).
-   Open `https://www.example.com` → *not* muted. Edit the rule, enable
-   "Include subdomains" → the `www` tab becomes muted without reloading.
+1. **Domain rule** – Options → add `example.com` (domain; "Include
+   subdomains" is on by default). Open `https://example.com` and
+   `https://www.example.com` → both tabs are muted (tab strip shows a muted
+   speaker). Edit the rule, turn "Include subdomains" off → the `www` tab is
+   unmuted without reloading.
 2. **Leaving a match** – In the muted tab navigate to another site → the tab
    is unmuted.
 3. **Existing tabs** – With some matching tabs open, disable the rule → those
@@ -136,8 +137,9 @@ which shows "Unmute site"/"Unmute tab").
     pages and they are not listed under Options → Open tabs.
 12. **Add domain from an open tab** – Open `https://news.example.org/a/b`,
     then in Options → Open tabs click "Add domain" → a rule
-    `news.example.org` (no subdomains) is created, the tab is muted and the
-    button shows "Domain added".
+    `news.example.org` (domain + subdomains) is created, the tab is muted and
+    the button shows "Domain added". For `https://www.example.com` the rule
+    is `example.com` (the leading `www.` is dropped).
 13. **Validation** – In Options try `example.com/path` (domain) → error;
     `example.com` (URL prefix) → error; add the same rule twice → "An
     equivalent rule already exists" and no duplicate is created.

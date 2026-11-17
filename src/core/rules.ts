@@ -217,6 +217,16 @@ export function findDuplicateRule(
 export type BuildRuleResult = { ok: true; draft: RuleDraft; notice?: string } | { ok: false; error: string };
 
 /** Validates raw form input into a normalized rule draft. */
+/**
+ * Domain to suggest when adding a rule from an open tab: a leading `www.` is
+ * dropped (unless only a public suffix would remain) so the rule, which
+ * includes subdomains, also covers the bare domain and other subdomains.
+ */
+export function suggestedDomainForHost(hostname: string): string {
+  const stripped = hostname.replace(/^www\./, "");
+  return stripped !== hostname && stripped.includes(".") ? stripped : hostname;
+}
+
 export function buildRuleDraft(type: RuleType, rawValue: string, includeSubdomains: boolean): BuildRuleResult {
   const normalized = normalizeRuleValue(type, rawValue);
   if (!normalized.ok) return normalized;
