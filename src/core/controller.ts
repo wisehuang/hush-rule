@@ -198,17 +198,31 @@ export class TabController {
     });
   }
 
-  /** Manual mute/unmute from the popup. Returns the resulting muted state. */
+  /** Manual mute/unmute (toolbar click or options page). Returns false if the tab is gone. */
   async setManualMute(tabId: number, muted: boolean): Promise<boolean> {
-    let result = false;
+    return (await this.applyManual(tabId, () => muted)) !== null;
+  }
+
+  /**
+   * Toolbar-button action: flips the tab's current mute state as a manual
+   * override. The current state is read inside the tab queue so rapid clicks
+   * toggle correctly. Returns the new muted state, or null if the tab is gone.
+   */
+  toggleManualMute(tabId: number): Promise<boolean | null> {
+    return this.applyManual(tabId, (currentlyMuted) => !currentlyMuted);
+  }
+
+  private async applyManual(tabId: number, target: (currentlyMuted: boolean) => boolean): Promise<boolean | null> {
+    let result: boolean | null = null;
     await this.enqueue(tabId, "manual", async () => {
       const tab = await this.api.getTab(tabId);
       if (!tab) throw new Error(`Tab ${tabId} no longer exists`);
+      const muted = target(tab.mutedInfo?.muted ?? false);
       const before = await this.readState(tabId);
       const documentId = await this.api.getDocumentId(tabId);
       await this.api.setMuted(tabId, muted);
       await this.writeState(tabId, before, applyManualMute(muted, documentId));
-      result = true;
+      result = muted;
     });
     return result;
   }

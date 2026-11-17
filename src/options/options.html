@@ -21,6 +21,18 @@
         page load is possible.
       </p>
 
+      <p class="hint">
+        Click the Hush Rules toolbar button to mute or unmute the current tab. A manual choice is kept until the page
+        reloads or navigates to a new page.
+      </p>
+
+      <section class="card">
+        <h2>Open tabs</h2>
+        <p class="hint">Mute a tab manually or add its domain as a rule.</p>
+        <ul id="tab-list" class="list"></ul>
+        <p id="tabs-empty" class="empty" hidden>No open http:// or https:// tabs.</p>
+      </section>
+
       <section class="card">
         <h2 id="form-title">Add a rule</h2>
         <form id="rule-form" novalidate>

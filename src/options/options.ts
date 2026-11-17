@@ -1,7 +1,9 @@
-import { buildRuleDraft, findDuplicateRule, isSupportedUrl, ruleMatchesUrl } from "../core/rules";
+import { describeMuteState } from "../core/mute-label";
+import { type RuleDraft, buildRuleDraft, findDuplicateRule, findMatchingRules, getHostname, isSupportedUrl, ruleMatchesUrl } from "../core/rules";
 import type { Rule, RuleType } from "../core/types";
 import { byId, describeRule, el } from "../shared/dom";
-import { LOCAL_KEYS, loadConfig, saveAutoMuteEnabled, updateRules } from "../shared/storage";
+import type { SetManualMuteMessage, SetManualMuteResponse } from "../shared/messages";
+import { LOCAL_KEYS, loadConfig, loadTabState, saveAutoMuteEnabled, updateRules } from "../shared/storage";
 
 const autoToggle = byId<HTMLInputElement>("auto-toggle");
 const form = byId<HTMLFormElement>("rule-form");
@@ -21,6 +23,8 @@ const ruleList = byId<HTMLUListElement>("rule-list");
 const rulesEmpty = byId("rules-empty");
 const testerInput = byId<HTMLInputElement>("tester-input");
 const testerResult = byId("tester-result");
+const tabList = byId<HTMLUListElement>("tab-list");
+const tabsEmpty = byId("tabs-empty");
 
 let rules: Rule[] = [];
 let autoMuteEnabled = true;
@@ -158,6 +162,88 @@ function renderTester(): void {
   }
 }
 
+let tabsRenderToken = 0;
+
+/** Lists open http(s) tabs with their mute state, a mute toggle and "Add domain". */
+async function renderTabs(): Promise<void> {
+  const token = ++tabsRenderToken;
+  const tabs = (await chrome.tabs.query({})).filter(
+    (tab): tab is chrome.tabs.Tab & { id: number; url: string } => tab.id !== undefined && isSupportedUrl(tab.url),
+  );
+  const states = await Promise.all(tabs.map((tab) => loadTabState(tab.id)));
+  if (token !== tabsRenderToken) return; // a newer render started meanwhile
+
+  tabList.replaceChildren();
+  tabsEmpty.hidden = tabs.length > 0;
+  tabs.forEach((tab, index) => {
+    const hostname = getHostname(tab.url) ?? tab.url;
+    const mutedInfo = tab.mutedInfo ?? { muted: false };
+    const matches = findMatchingRules(rules, tab.url);
+    const status = [
+      describeMuteState(mutedInfo, states[index] ?? null, chrome.runtime.id),
+      matches.length > 0 ? `matches ${matches.map(describeRule).join(", ")}` : "no matching rules",
+    ].join(" · ");
+
+    const muteButton = el("button", { text: mutedInfo.muted ? "Unmute" : "Mute", attrs: { type: "button" } });
+    muteButton.addEventListener("click", () => void setTabMuted(tab.id, !mutedInfo.muted));
+
+    const draft = buildRuleDraft("domain", hostname, false);
+    const exists = draft.ok && findDuplicateRule(rules, draft.draft) !== undefined;
+    const addButton = el("button", { text: exists ? "Domain added" : "Add domain", attrs: { type: "button" } });
+    addButton.disabled = !draft.ok || exists;
+    addButton.addEventListener("click", () => {
+      if (!draft.ok) return;
+      void addDraft(draft.draft);
+    });
+
+    tabList.append(
+      el(
+        "li",
+        { className: "tab" },
+        el(
+          "div",
+          { className: "info" },
+          el("span", { className: "host mono", text: hostname }),
+          el("span", { className: "title", text: tab.title ?? "" }),
+          el("span", { className: "hint", text: status }),
+        ),
+        muteButton,
+        addButton,
+      ),
+    );
+  });
+}
+
+async function setTabMuted(tabId: number, muted: boolean): Promise<void> {
+  const message: SetManualMuteMessage = { type: "set-manual-mute", tabId, muted };
+  try {
+    const response = (await chrome.runtime.sendMessage(message)) as SetManualMuteResponse | undefined;
+    if (!response?.ok) setFeedback(response?.error ?? "Could not change the mute state.", "error");
+  } catch (error) {
+    setFeedback(`Could not change the mute state: ${String(error)}`, "error");
+  }
+  await renderTabs();
+}
+
+async function addDraft(draft: RuleDraft): Promise<void> {
+  let duplicate = false;
+  try {
+    rules = await updateRules((list) => {
+      if (findDuplicateRule(list, draft)) {
+        duplicate = true;
+        return list;
+      }
+      return [...list, { id: crypto.randomUUID(), enabled: true, ...draft }];
+    });
+    setFeedback(duplicate ? "A rule for this domain already exists." : `Rule added: ${describeRule(draft)}.`, duplicate ? "info" : "success");
+  } catch (error) {
+    setFeedback(`Could not save: ${String(error)}`, "error");
+  }
+  renderRules();
+  renderTester();
+  await renderTabs();
+}
+
 async function persist(update: (list: Rule[]) => Rule[], message: string): Promise<void> {
   try {
     rules = await updateRules(update);
@@ -227,10 +313,19 @@ async function reload(): Promise<void> {
   if (editingId !== null && !rules.some((r) => r.id === editingId)) resetForm();
   renderRules();
   renderTester();
+  await renderTabs();
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && (LOCAL_KEYS.rules in changes || LOCAL_KEYS.autoMuteEnabled in changes)) void reload();
+  if (area === "session") void renderTabs();
+});
+
+const refreshTabs = () => void renderTabs();
+chrome.tabs.onCreated.addListener(refreshTabs);
+chrome.tabs.onRemoved.addListener(refreshTabs);
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
+  if (changeInfo.url !== undefined || changeInfo.mutedInfo !== undefined || changeInfo.title !== undefined) refreshTabs();
 });
 
 updateFormForType();

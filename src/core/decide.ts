@@ -50,7 +50,7 @@ export function overrideStillValid(state: TabState, documentId: string | null): 
 
 /**
  * Pure per-tab decision. Rules:
- * - An active override (manual popup action, or user / other extension
+ * - An active override (manual toolbar/options action, or user / other extension
  *   change) suspends automatic behavior for the current document.
  * - Mute when an enabled rule matches and the tab is not muted yet; claim
  *   ownership only for mutes this extension applies.
@@ -108,9 +108,9 @@ export function applyExternalMuteChange(
   return { autoMuted: false, override: { muted: mutedInfo.muted, documentId, source: "external" } };
 }
 
-/** State after a manual mute/unmute from the popup. Never counts as an automatic mute. */
+/** State after a manual mute/unmute (toolbar click or options page). Never counts as an automatic mute. */
 export function applyManualMute(muted: boolean, documentId: string | null): TabState {
-  return { autoMuted: false, override: { muted, documentId, source: "popup" } };
+  return { autoMuted: false, override: { muted, documentId, source: "manual" } };
 }
 
 /**

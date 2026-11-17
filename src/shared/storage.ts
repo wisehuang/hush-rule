@@ -68,7 +68,7 @@ function sanitizeTabState(value: unknown): TabState | null {
       ? {
           muted: o.muted,
           documentId: typeof o.documentId === "string" ? o.documentId : null,
-          source: o.source === "popup" ? ("popup" as const) : ("external" as const),
+          source: o.source === "manual" ? ("manual" as const) : ("external" as const),
         }
       : null;
   return { autoMuted: v.autoMuted === true, override };

@@ -17,7 +17,20 @@ scripts or modifies web pages.
 2. Open `chrome://extensions`.
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and select the `dist/` directory.
-5. Pin "Hush Rules" from the extensions menu to reach the popup.
+5. Pin "Hush Rules" from the extensions menu.
+
+## Usage
+
+- **Click the toolbar button** to mute or unmute the current tab. This is a
+  manual choice: automatic rules leave the tab alone until the page reloads or
+  navigates to a new page. It works on any tab, including browser pages.
+- **The toolbar icon shows the current tab's actual mute state**: a coral
+  speaker with an X when the tab is muted (by anyone), a teal speaker with
+  sound waves when it is not. Hovering shows the same as text.
+- **Options** (right-click the toolbar button → *Options*, or
+  `chrome://extensions` → Hush Rules → *Details* → *Extension options*) holds
+  all settings: the automatic-muting switch, open tabs (with mute and "Add
+  domain" buttons), the rule list and form, and a URL tester.
 
 Requires Chrome 120 or newer.
 
@@ -29,7 +42,7 @@ Requires Chrome 120 or newer.
 | `pnpm build`     | Production build to `dist/`                                                   |
 | `pnpm test`      | Vitest unit tests                                                             |
 | `pnpm typecheck` | `tsc --noEmit`                                                                |
-| `pnpm icons`     | Regenerates `public/icons/*.png` (no image dependencies)                      |
+| `pnpm icons`     | Regenerates `public/icons/*.png` (app + muted/unmuted toolbar icons)          |
 
 (`npm run <script>` works the same.) While `pnpm dev` is running, click the
 reload button on the extension card in `chrome://extensions` after each
@@ -46,7 +59,6 @@ src/core/        pure logic, no chrome.* calls (unit tested)
   mute-label.ts  human-readable mute state
 src/shared/      chrome.storage helpers, message types, safe DOM helpers, CSS
 src/background/  service worker: Chrome adapter + event listeners
-src/popup/       toolbar popup
 src/options/     options page (rule list, form, URL tester)
 tests/           Vitest tests and an in-memory fake browser
 ```
@@ -93,16 +105,16 @@ which shows "Unmute site"/"Unmute tab").
 2. **Leaving a match** – In the muted tab navigate to another site → the tab
    is unmuted.
 3. **Existing tabs** – With some matching tabs open, disable the rule → those
-   tabs unmute; enable it → they mute again. Same for the popup's
-   "Automatic muting" toggle, and for deleting the rule.
+   tabs unmute; enable it → they mute again. Same for the Options
+   "Automatic muting" switch, and for deleting the rule.
 4. **Already-muted tab** – Mute a non-matching tab via the tab context menu,
-   then navigate it to a matching site and back away → it stays muted (popup
-   says "Muted by you").
-5. **Manual override** – On a matching, auto-muted page click "Unmute tab" in
-   the popup → audio plays. On a single-page app (for example a video site),
+   then navigate it to a matching site and back away → it stays muted (Options →
+   Open tabs says "Muted by you").
+5. **Manual override** – On a matching, auto-muted page click the Hush Rules
+   toolbar button → audio plays. On a single-page app (for example a video site),
    navigate inside the app → still unmuted. Press reload → muted again.
-6. **Manual mute + global off** – On a non-matching page click "Mute tab",
-   then turn automatic muting off → the tab stays muted.
+6. **Manual mute + global off** – On a non-matching page click the toolbar
+   button, then turn automatic muting off in Options → the tab stays muted.
 7. **User change is respected** – On an auto-muted tab use the tab context
    menu to unmute it → it is not re-muted until the page reloads or a new
    document loads.
@@ -117,13 +129,13 @@ which shows "Unmute site"/"Unmute tab").
 10. **Closed tabs / races** – Rapidly open and close matching tabs and
     navigate quickly between matching and non-matching pages; the service
     worker console should show no uncaught errors.
-11. **Unsupported pages** – Open the popup on `chrome://extensions` or the New
-    Tab page → it explains the page is unsupported and disables "Add this
-    domain" and "Mute tab".
-12. **Popup add domain** – On `https://news.example.org/a/b` click "Add this
-    domain to mute rules" → a rule `news.example.org` (no subdomains) is
-    created and the tab is muted; the button then shows "This domain is
-    already a rule".
+11. **Unsupported pages** – On `chrome://extensions` click the toolbar
+    button → the tab is muted/unmuted manually; no rule ever applies to such
+    pages and they are not listed under Options → Open tabs.
+12. **Add domain from an open tab** – Open `https://news.example.org/a/b`,
+    then in Options → Open tabs click "Add domain" → a rule
+    `news.example.org` (no subdomains) is created, the tab is muted and the
+    button shows "Domain added".
 13. **Validation** – In Options try `example.com/path` (domain) → error;
     `example.com` (URL prefix) → error; add the same rule twice → "An
     equivalent rule already exists" and no duplicate is created.
@@ -187,7 +199,8 @@ equivalent rule shows a message instead of creating it.
   `{ reason: "extension", extensionId: <Hush Rules> }`. This applies when
   leaving a matching URL, disabling/deleting a rule and turning automatic
   muting off. A tab that was already muted is never claimed.
-- Popup "Mute tab" / "Unmute tab" sets a manual override bound to the current
+- Clicking the toolbar button (or Mute/Unmute under Options → Open tabs) sets
+  a manual override bound to the current
   main-frame `documentId`. Automatic rules do not touch the tab while the
   override is active. It survives same-document (SPA) navigation and is
   cleared when a new document commits (navigation or reload) or the tab
@@ -232,7 +245,7 @@ remote code or CDNs. All UI text is inserted with `textContent` /
   navigation may still be cancelled, and mute/unmute actions taken before
   commit belong to the previous document.
 - Rules are edited by read-modify-write on `chrome.storage.local`. Saving from
-  the popup and the options page at the very same instant could lose one of
+  two Options pages at the very same instant could lose one of
   the two writes.
 - `pnpm` is used in examples; plain `npm` works with the same scripts.
 

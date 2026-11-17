@@ -22,7 +22,7 @@ export interface MutedInfoLike {
 }
 
 /**
- * A mute decision taken by a person (popup action) or by a third party
+ * A mute decision taken by a person (toolbar click / options page) or by a third party
  * (user via tab strip, another extension). It suspends automatic rules for
  * the document it was taken on.
  */
@@ -30,7 +30,7 @@ export interface MuteOverride {
   muted: boolean;
   /** Main-frame documentId when known; `null` if it could not be read. */
   documentId: string | null;
-  source: "popup" | "external";
+  source: "manual" | "external";
 }
 
 /** Per-tab runtime state persisted in `chrome.storage.session`. */

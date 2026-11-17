@@ -1,3 +1,4 @@
+import { actionAppearance } from "../core/action-icon";
 import { TabController, type BrowserApi, type TabInfo } from "../core/controller";
 import { isExtensionMessage, type SetManualMuteResponse } from "../shared/messages";
 import {
@@ -51,6 +52,26 @@ const chromeApi: BrowserApi = {
 
 const controller = new TabController(chromeApi);
 
+/**
+ * Shows the tab's actual mute state on the toolbar button. Chrome resets
+ * tab-specific action icons on navigation, so this runs on every relevant
+ * tab update. Errors (closed tab) are ignored.
+ */
+async function syncActionIcon(tabId: number, muted?: boolean): Promise<void> {
+  try {
+    const isMuted = muted ?? (await chrome.tabs.get(tabId)).mutedInfo?.muted ?? false;
+    const { path, title } = actionAppearance(isMuted);
+    await Promise.all([chrome.action.setIcon({ tabId, path }), chrome.action.setTitle({ tabId, title })]);
+  } catch {
+    // Tab closed or not yet ready; the next update event syncs it again.
+  }
+}
+
+async function syncAllActionIcons(): Promise<void> {
+  const tabs = await chrome.tabs.query({});
+  await Promise.all(tabs.map((tab) => (tab.id === undefined ? undefined : syncActionIcon(tab.id, tab.mutedInfo?.muted))));
+}
+
 // Listeners are registered synchronously at top level so Chrome can wake the
 // service worker for them after it has been stopped.
 
@@ -64,9 +85,12 @@ chrome.runtime.onInstalled.addListener((details) => {
       }
     }
     await controller.evaluateAllTabs();
+    await syncAllActionIcons();
   })();
 });
-chrome.runtime.onStartup.addListener(() => void controller.evaluateAllTabs());
+chrome.runtime.onStartup.addListener(() => {
+  void controller.evaluateAllTabs().then(syncAllActionIcons);
+});
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local") return;
@@ -76,10 +100,15 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 chrome.tabs.onCreated.addListener((tab) => {
-  if (tab.id !== undefined) void controller.evaluateTab(tab.id);
+  if (tab.id === undefined) return;
+  void controller.evaluateTab(tab.id);
+  void syncActionIcon(tab.id, tab.mutedInfo?.muted);
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.mutedInfo || changeInfo.url !== undefined || changeInfo.status !== undefined) {
+    void syncActionIcon(tabId, tab.mutedInfo?.muted);
+  }
   if (changeInfo.mutedInfo) void controller.handleMutedInfoChanged(tabId, changeInfo.mutedInfo);
   // `url` covers navigations including same-document (SPA) history changes;
   // `status` covers reloads where the URL does not change.
@@ -99,6 +128,12 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 });
 chrome.webNavigation.onReferenceFragmentUpdated.addListener((details) => {
   if (details.frameId === 0) void controller.evaluateTab(details.tabId);
+});
+
+// Clicking the toolbar button toggles mute for that tab (manual override).
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id === undefined || tab.id === chrome.tabs.TAB_ID_NONE) return;
+  void controller.toggleManualMute(tab.id);
 });
 
 chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {

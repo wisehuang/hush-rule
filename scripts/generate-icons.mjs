@@ -1,5 +1,5 @@
 // Generates the extension icons (public/icons/icon-<size>.png) without any
-// image dependencies: a flat white speaker with an "X" on a coral squircle.
+// image dependencies: flat white glyphs on a solid squircle.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,9 +45,15 @@ function encodePng(size, rgba) {
   ]);
 }
 
-// Flat design in a unit square [0,1]²: white speaker and "X" on a solid
-// coral squircle. `shade` returns the RGB color at a point, or null.
-const BG = [249, 84, 91];
+// Flat design in a unit square [0,1]². Three variants:
+// - "app":     extension icon (coral, speaker + X)
+// - "muted":   toolbar icon for a muted tab (same as app)
+// - "unmuted": toolbar icon for an audible tab (teal, speaker + sound waves)
+const VARIANTS = {
+  app: { bg: [249, 84, 91], glyph: "cross" },
+  muted: { bg: [249, 84, 91], glyph: "cross" },
+  unmuted: { bg: [20, 160, 140], glyph: "waves" },
+};
 const FG = [255, 255, 255];
 
 function insideRoundedSquare(x, y, r) {
@@ -70,13 +76,26 @@ function insideCross(x, y) {
   const w = 0.055;
   return Math.abs(u - v) / Math.SQRT2 <= w || Math.abs(u + v) / Math.SQRT2 <= w;
 }
-
-function shade(x, y) {
-  if (!insideRoundedSquare(x, y, 0.24)) return null;
-  return insideSpeaker(x, y) || insideCross(x, y) ? FG : BG;
+function insideWaves(x, y) {
+  // Two concentric arcs to the right of the speaker cone.
+  const cx = 0.5;
+  const dx = x - cx;
+  const dy = y - 0.5;
+  if (dx <= 0 || Math.abs(Math.atan2(dy, dx)) > Math.PI / 4) return false;
+  const d = Math.hypot(dx, dy);
+  return Math.abs(d - 0.14) <= 0.04 || Math.abs(d - 0.3) <= 0.04;
 }
 
-function render(size) {
+function makeShade(variant) {
+  const { bg, glyph } = VARIANTS[variant];
+  const insideGlyph = glyph === "cross" ? insideCross : insideWaves;
+  return (x, y) => {
+    if (!insideRoundedSquare(x, y, 0.24)) return null;
+    return insideSpeaker(x, y) || insideGlyph(x, y) ? FG : bg;
+  };
+}
+
+function render(size, shade) {
   const rgba = Buffer.alloc(size * size * 4);
   const SS = 4;
   for (let py = 0; py < size; py++) {
@@ -100,8 +119,16 @@ function render(size) {
   return encodePng(size, rgba);
 }
 
+const OUTPUTS = [
+  ...SIZES.map((size) => ({ variant: "app", size, file: `icon-${size}.png` })),
+  ...[16, 32].flatMap((size) => [
+    { variant: "muted", size, file: `action-muted-${size}.png` },
+    { variant: "unmuted", size, file: `action-unmuted-${size}.png` },
+  ]),
+];
+
 mkdirSync(outDir, { recursive: true });
-for (const size of SIZES) {
-  writeFileSync(resolve(outDir, `icon-${size}.png`), render(size));
-  console.log(`wrote icons/icon-${size}.png`);
+for (const { variant, size, file } of OUTPUTS) {
+  writeFileSync(resolve(outDir, file), render(size, makeShade(variant)));
+  console.log(`wrote icons/${file}`);
 }

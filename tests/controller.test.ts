@@ -237,6 +237,36 @@ describe("unsupported pages", () => {
   });
 });
 
+describe("toolbar button toggle", () => {
+  it("toggles the current state as a manual override", async () => {
+    const { fake, controller } = setup();
+    fake.addTab(1, "https://loud.test/");
+    await controller.evaluateTab(1); // auto-muted
+    expect(await controller.toggleManualMute(1)).toBe(false);
+    expect(fake.tab(1).mutedInfo.muted).toBe(false);
+    expect(fake.session.get(1)).toMatchObject({ autoMuted: false, override: { muted: false, source: "manual" } });
+    await controller.evaluateTab(1);
+    expect(fake.tab(1).mutedInfo.muted).toBe(false); // not reverted
+    expect(await controller.toggleManualMute(1)).toBe(true);
+    expect(fake.tab(1).mutedInfo.muted).toBe(true);
+  });
+
+  it("rapid clicks toggle in order", async () => {
+    const { fake, controller } = setup();
+    fake.addTab(1, "https://quiet.test/");
+    const results = await Promise.all([controller.toggleManualMute(1), controller.toggleManualMute(1), controller.toggleManualMute(1)]);
+    expect(results).toEqual([true, false, true]);
+    expect(fake.tab(1).mutedInfo.muted).toBe(true);
+  });
+
+  it("works on unsupported pages and returns null for closed tabs", async () => {
+    const { fake, controller } = setup();
+    fake.addTab(1, "chrome://settings/");
+    expect(await controller.toggleManualMute(1)).toBe(true);
+    expect(await controller.toggleManualMute(999)).toBeNull();
+  });
+});
+
 describe("service worker restart (test 9)", () => {
   it("ownership and overrides survive a new controller instance", async () => {
     const fake = new FakeBrowser();
@@ -340,7 +370,7 @@ describe("decide (pure)", () => {
   it("keeps an override recorded without documentId until a commit clears it", () => {
     const d = decide({
       tab: { url: "https://loud.test/", mutedInfo: { muted: false }, documentId: "doc-9" },
-      state: { autoMuted: false, override: { muted: false, documentId: null, source: "popup" } },
+      state: { autoMuted: false, override: { muted: false, documentId: null, source: "manual" } },
       rules: [RULE],
       autoMuteEnabled: true,
       selfId: SELF_ID,

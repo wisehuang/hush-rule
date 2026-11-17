@@ -19,7 +19,6 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       input: {
         background: resolve(root, "background/index.ts"),
-        popup: resolve(root, "popup/popup.html"),
         options: resolve(root, "options/options.html"),
       },
       output: {
