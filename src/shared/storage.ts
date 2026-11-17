@@ -1,3 +1,4 @@
+import { buildDefaultRules } from "../core/defaults";
 import { sanitizeRules } from "../core/rules";
 import type { Rule, TabState } from "../core/types";
 
@@ -13,6 +14,17 @@ export async function loadRules(): Promise<Rule[]> {
 
 export async function saveRules(rules: readonly Rule[]): Promise<void> {
   await chrome.storage.local.set({ [LOCAL_KEYS.rules]: rules });
+}
+
+/**
+ * Seeds the default rules on first install. Does nothing if a rule list was
+ * ever saved (including an empty one), so user deletions are respected.
+ */
+export async function seedDefaultRulesIfMissing(): Promise<boolean> {
+  const data = await chrome.storage.local.get(LOCAL_KEYS.rules);
+  if (data[LOCAL_KEYS.rules] !== undefined) return false;
+  await saveRules(buildDefaultRules(() => crypto.randomUUID()));
+  return true;
 }
 
 export async function loadAutoMuteEnabled(): Promise<boolean> {

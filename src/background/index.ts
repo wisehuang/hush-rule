@@ -7,6 +7,7 @@ import {
   loadTabState,
   removeTabState,
   saveTabState,
+  seedDefaultRulesIfMissing,
 } from "../shared/storage";
 
 function toTabInfo(tab: chrome.tabs.Tab): TabInfo | null {
@@ -53,7 +54,18 @@ const controller = new TabController(chromeApi);
 // Listeners are registered synchronously at top level so Chrome can wake the
 // service worker for them after it has been stopped.
 
-chrome.runtime.onInstalled.addListener(() => void controller.evaluateAllTabs());
+chrome.runtime.onInstalled.addListener((details) => {
+  void (async () => {
+    if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
+      try {
+        await seedDefaultRulesIfMissing();
+      } catch (error) {
+        chromeApi.log?.("seeding default rules failed", error);
+      }
+    }
+    await controller.evaluateAllTabs();
+  })();
+});
 chrome.runtime.onStartup.addListener(() => void controller.evaluateAllTabs());
 
 chrome.storage.onChanged.addListener((changes, areaName) => {

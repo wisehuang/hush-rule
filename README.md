@@ -127,6 +127,10 @@ which shows "Unmute site"/"Unmute tab").
 13. **Validation** – In Options try `example.com/path` (domain) → error;
     `example.com` (URL prefix) → error; add the same rule twice → "An
     equivalent rule already exists" and no duplicate is created.
+14. **Default rules** – On a fresh install (remove and re-add the extension),
+    Options lists `youtube.com`, `x.com`, `facebook.com`, `threads.com` and
+    `instagram.com` as "domain + subdomains"; opening `https://www.youtube.com`
+    mutes the tab. Delete one, reload the extension → it is not re-added.
 
 ## Rule-matching semantics
 
@@ -213,8 +217,13 @@ remote code or CDNs. All UI text is inserted with `textContent` /
 
 ## Assumptions
 
-- Automatic muting is **on** by default after installation; there are no
-  rules by default.
+- Automatic muting is **on** by default after installation, and these
+  domain rules (with "Include subdomains" on) are created on first install:
+  `youtube.com`, `x.com`, `facebook.com`, `threads.com`, `instagram.com`.
+  Subdomains are included so `www.`/`m.` hosts match; this also covers e.g.
+  `music.youtube.com`. They are normal rules: disable, edit or delete them in
+  Options. Defaults are only added on a fresh install when no rule list has
+  been saved yet, so deleting them is permanent and updates never re-add them.
 - Overrides recorded when the `documentId` could not be read are kept until
   the next main-frame commit.
 - A URL is "usable" as soon as Chrome reports the committed `tab.url`.
