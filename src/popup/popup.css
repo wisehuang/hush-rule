@@ -1,0 +1,8 @@
+body { width: 320px; padding: 12px; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+section { border-top: 1px solid var(--border); padding: 8px 0; }
+.label { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-fg); }
+#tab-host { margin: 0; font-weight: 600; }
+.notice { background: var(--surface); padding: 8px; border-radius: 6px; font-size: 12px; }
+.actions { display: flex; flex-direction: column; gap: 6px; }
+#matching-rules li { padding: 2px 0; }

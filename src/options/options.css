@@ -1,0 +1,15 @@
+main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 16px; }
+.row { display: grid; grid-template-columns: 80px 1fr; align-items: center; gap: 8px; margin-bottom: 8px; }
+.help { background: var(--surface); padding: 8px; border-radius: 6px; line-height: 1.5; }
+.buttons { display: flex; gap: 8px; }
+#form-error:empty, #preview:empty { display: none; }
+#tester-input { width: 100%; }
+.rule { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.rule:last-child { border-bottom: none; }
+.rule .value { flex: 1; }
+.rule.disabled .value { color: var(--muted-fg); text-decoration: line-through; }
+.rule.editing { background: var(--surface); }
+.badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted-fg); white-space: nowrap; }
+#tester-result { margin-top: 8px; }
